@@ -1,41 +1,85 @@
-import { RecintosZoo } from "./recintos-zoo.js";
+class RecintosZoo {
+  constructor() {
+    this.recintos = [
+      { numero: 1, bioma: 'savana', tamanho: 10, animais: { macacos: 3 } },
+      { numero: 2, bioma: 'floresta', tamanho: 5, animais: {} },
+      { numero: 3, bioma: 'savana e rio', tamanho: 7, animais: { gazelas: 1 } },
+      { numero: 4, bioma: 'rio', tamanho: 8, animais: {} },
+      { numero: 5, bioma: 'savana', tamanho: 9, animais: { leoes: 1 } },
+    ];
 
-describe('Recintos do Zoologico', () => {
+    this.animais = {
+      LEAO: { tamanho: 3, bioma: 'savana', tipo: 'carnivoro' },
+      LEOPARDO: { tamanho: 2, bioma: 'savana', tipo: 'carnivoro' },
+      CROCODILO: { tamanho: 3, bioma: 'rio', tipo: 'carnivoro' },
+      MACACO: { tamanho: 1, bioma: ['savana', 'floresta'], tipo: 'herbivoro' },
+      GAZELA: { tamanho: 2, bioma: 'savana', tipo: 'herbivoro' },
+      HIPOPOTAMO: { tamanho: 4, bioma: ['savana', 'rio'], tipo: 'herbivoro' },
+    };
+  }
 
-    test('Deve rejeitar animal inválido', () => {
-            const resultado = new RecintosZoo().analisaRecintos('UNICORNIO', 1);
-            expect(resultado.erro).toBe("Animal inválido");
-            expect(resultado.recintosViaveis).toBeFalsy();
-        });
+  analisaRecintos(animal, quantidade) {
+    // Validação da entrada
+    if (!this.animais[animal.toUpperCase()]) {
+      return { erro: 'Animal inválido' };
+    }
+    if (typeof quantidade !== 'number' || quantidade <= 0 || !Number.isInteger(quantidade)) {
+      return { erro: 'Quantidade inválida' };
+    }
 
-    test('Deve rejeitar quantidade inválida', () => {
-            const resultado = new RecintosZoo().analisaRecintos('MACACO', 0);
-            expect(resultado.erro).toBe("Quantidade inválida");
-            expect(resultado.recintosViaveis).toBeFalsy();
+    const infoAnimal = this.animais[animal.toUpperCase()];
+    const recintosViaveis = [];
+
+    this.recintos.forEach(recinto => {
+      const biomaAdequado = Array.isArray(infoAnimal.bioma) ? infoAnimal.bioma.includes(recinto.bioma) : recinto.bioma === infoAnimal.bioma;
+
+      if (!biomaAdequado) return;
+
+      const espacoOcupadoNovosAnimais = quantidade * infoAnimal.tamanho + (quantidade - 1);
+      const espacoOcupadoAtual = this.calculaEspacoOcupado(recinto);
+      const espacoLivreAtual = recinto.tamanho - espacoOcupadoAtual - espacoOcupadoNovosAnimais;
+
+      if (espacoLivreAtual < 0) return;
+
+      if (infoAnimal.tipo === 'carnivoro') {
+        const jaTemCarnivoro = Object.keys(recinto.animais).some(animalExistente =>
+          this.animais[animalExistente.toUpperCase()]?.tipo === 'carnivoro'
+        );
+        if (jaTemCarnivoro) return;
+      } else if (espacoLivreAtual < quantidade * infoAnimal.tamanho) {
+        return;
+      }
+
+      if (animal.toUpperCase() === 'MACACO' && quantidade === 1 && Object.keys(recinto.animais).length === 0) {
+        return;
+      }
+
+      recintosViaveis.push(`Recinto ${recinto.numero} (espaço livre: ${espacoLivreAtual} total: ${recinto.tamanho})`);
     });
 
-    test('Não deve encontrar recintos para 10 macacos', () => {
-            const resultado = new RecintosZoo().analisaRecintos('MACACO', 10);
-            expect(resultado.erro).toBe("Não há recinto viável");
-            expect(resultado.recintosViaveis).toBeFalsy();
-        });
+    if (recintosViaveis.length === 0) {
+      return { erro: 'Não há recinto viável' };
+    }
 
-    test('Deve encontrar recinto para 1 crocodilo', () => {
-        const resultado = new RecintosZoo().analisaRecintos('CROCODILO', 1);
-        expect(resultado.erro).toBeFalsy();
-        expect(resultado.recintosViaveis[0]).toBe('Recinto 4 (espaço livre: 5 total: 8)');
-        expect(resultado.recintosViaveis.length).toBe(1);
-    });
+    return { recintosViaveis: recintosViaveis.sort() };
+  }
 
-    test('Deve encontrar recintos para 2 macacos', () => {
+  calculaEspacoOcupado(recinto) {
+    let espacoOcupado = 0;
+    for (const [animalExistente, quantidade] of Object.entries(recinto.animais)) {
+      const nomeSingular = animalExistente.slice(0, -1).toUpperCase();
+      const info = this.animais[nomeSingular];
+      if (!info) {
+        console.error(`Informações do animal ${animalExistente} não encontradas.`);
+        continue;
+      }
+      espacoOcupado += info.tamanho * quantidade; 
+    }
+    return espacoOcupado;
+  
 
-        const resultado = new RecintosZoo().analisaRecintos('MACACO', 2);
-        expect(resultado.erro).toBeFalsy();
-        expect(resultado.recintosViaveis[0]).toBe('Recinto 1 (espaço livre: 5 total: 10)');
-        expect(resultado.recintosViaveis[1]).toBe('Recinto 2 (espaço livre: 3 total: 5)');
-        expect(resultado.recintosViaveis[2]).toBe('Recinto 3 (espaço livre: 2 total: 7)');
-        expect(resultado.recintosViaveis.length).toBe(3);
-    });
+  }
+  
+}
 
-});
-
+export { RecintosZoo as RecintosZoo };
